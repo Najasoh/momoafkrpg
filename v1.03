@@ -1,0 +1,1226 @@
+import threading
+import time
+import random
+import tkinter as tk
+from tkinter import ttk
+
+# ============================================================
+#                     CONFIG / DATA
+# ============================================================
+
+LANGUAGE_TEMPLATE = {
+    "Common": {"level": 1, "xp": 0, "xp_to_level": 50},
+    "Elven": {"level": 1, "xp": 0, "xp_to_level": 50},
+}
+
+ELEMENT_TEMPLATE = {
+    "Fire": {"level": 0, "xp": 0, "xp_to_level": 50},
+    "Water": {"level": 0, "xp": 0, "xp_to_level": 50},
+    "Earth": {"level": 0, "xp": 0, "xp_to_level": 50},
+    "Air": {"level": 0, "xp": 0, "xp_to_level": 50},
+    "Blood": {"level": 0, "xp": 0, "xp_to_level": 50},
+    "Darkness": {"level": 0, "xp": 0, "xp_to_level": 50},
+    "Light": {"level": 0, "xp": 0, "xp_to_level": 50},
+    "Blessed": {"level": 0, "xp": 0, "xp_to_level": 50},
+    "Unholy": {"level": 0, "xp": 0, "xp_to_level": 50},
+    "Metal": {"level": 0, "xp": 0, "xp_to_level": 50},
+}
+
+PROFESSION_TEMPLATE = {
+    "Farming": {"level": 1, "xp": 0, "xp_to_level": 50},
+    "Bartering": {"level": 1, "xp": 0, "xp_to_level": 50},
+    "Fishing": {"level": 1, "xp": 0, "xp_to_level": 50},
+    "Hunter": {"level": 1, "xp": 0, "xp_to_level": 50},
+    "Mining": {"level": 1, "xp": 0, "xp_to_level": 50},
+    "Woodcutting": {"level": 1, "xp": 0, "xp_to_level": 50},
+    "Cooking": {"level": 1, "xp": 0, "xp_to_level": 50},
+    "Crafting": {"level": 1, "xp": 0, "xp_to_level": 50},
+    "Fletching": {"level": 1, "xp": 0, "xp_to_level": 50},
+    "Herblore": {"level": 1, "xp": 0, "xp_to_level": 50},
+    "Runecraft": {"level": 1, "xp": 0, "xp_to_level": 50},
+    "Smithing": {"level": 1, "xp": 0, "xp_to_level": 50},
+    "Agility": {"level": 1, "xp": 0, "xp_to_level": 50},
+    "Construction": {"level": 1, "xp": 0, "xp_to_level": 50},
+    "Firemaking": {"level": 1, "xp": 0, "xp_to_level": 50},
+    "Sailing": {"level": 1, "xp": 0, "xp_to_level": 50},
+    "Slayer": {"level": 1, "xp": 0, "xp_to_level": 50},
+    "Thieving": {"level": 1, "xp": 0, "xp_to_level": 50},
+    "Dungeoneering": {"level": 1, "xp": 0, "xp_to_level": 50},
+}
+
+COMBAT_TEMPLATE = {
+    "Strength": {"level": 1, "xp": 0, "xp_to_level": 50},
+    "Attack": {"level": 1, "xp": 0, "xp_to_level": 50},
+    "Defense": {"level": 1, "xp": 0, "xp_to_level": 50},
+    "Ranged": {"level": 1, "xp": 0, "xp_to_level": 50},
+    "Magic": {"level": 1, "xp": 0, "xp_to_level": 50},
+    "Prayer": {"level": 1, "xp": 0, "xp_to_level": 50},
+    "Hitpoints": {"level": 1, "xp": 0, "xp_to_level": 50},
+    "Necromancy": {"level": 1, "xp": 0, "xp_to_level": 50},
+}
+
+# ============================================================
+#                     ITEMS & RECIPES
+# ============================================================
+
+ITEMS = {
+    "berry": {"name": "Berry", "type": "ingredient", "value": 1},
+    "berry_pie": {"name": "Berry Pie", "type": "food", "value": 5, "heal": 5},
+    "berry_juice": {"name": "Berry Juice", "type": "food", "value": 3, "heal": 3},
+    "coin1": {"name": "Copper Coin", "type": "currency", "value": 1},
+    "coin2": {"name": "Silver Coin", "type": "currency", "value": 10},
+    "coin3": {"name": "Gold Coin", "type": "currency", "value": 100},
+    "raw_meat": {"name": "Raw Meat", "type": "ingredient", "value": 3},
+    "cooked_meat": {"name": "Cooked Meat", "type": "food", "value": 9, "heal": 9},
+    "burnt_meat": {"name": "Burnt Meat", "type": "food", "value": 0, "heal": 0},
+    "trash": {"name": "Trash", "type": "trash", "value": 1},
+    "dough1": {"name": "Dough", "type": "ingredient", "value": 1},
+    "gourd": {"name": "Gourd", "type": "ingredient", "value": 2},
+    "water": {"name": "Water", "type": "ingredient", "value": 1},
+    "gourdwater": {"name": "Water Gourd", "type": "ingredient", "value": 5},
+    "tomato": {"name": "Tomato", "type": "ingredient", "value": 1},
+    "tomatosauce1": {"name": "Red Suace", "type": "ingredient", "value": 4},
+    "sauceybread": {"name": "Red Saucey Bread", "type": "food", "value": 9, "heal": 9},
+    "herb1": {"name": "Green Herb", "type": "ingredient", "value": 3},
+    "herb2": {"name": "Red Herb", "type": "ingredient", "value": 3},
+    "hppot1": {"name": "Small Red Potion", "type": "potion", "value": 7, "heal": 7},
+    "mppot1": {"name": "Small Blue Potion", "type": "potion", "value": 7},
+    "vial1": {"name": "Small Vial", "type": "ingredient", "value": 1},
+    "airrune": {"name": "Air Rune", "type": "ingredient", "value": 2},
+    "mindrune": {"name": "Mind Rune", "type": "ingredient", "value": 3},
+    "shortbow": {"name": "Short Bow", "type": "bow", "value": 2},
+    "bronzearrow": {"name": "Bronze Arrow", "type": "arrow", "value": 1},
+    "cabbages": {"name": "Cabbages", "type": "ingredient", "value": 1},
+    "eggs": {"name": "Eggs", "type": "ingredient", "value": 1},
+    "cowhide": {"name": "Cow Hide", "type": "ingredient", "value": 1},
+    "knife": {"name": "Knife", "type": "mainhand", "value": 1},
+    "bronzepickaxe": {"name": "Bronze Pickaxe", "type": "pickaxe", "value": 2},
+    "bronzeaxe": {"name": "Bronze Axe", "type": "axe", "value": 2},
+    "smallfishingnet": {"name": "Small Fishing Net", "type": "small net", "value": 2},
+    "eggsalad": {"name": "Egg Salad", "type": "food", "value": 6, "heal": 6},
+    "trainingsword": {"name": "Training Sword", "type": "mainhand", "value": 1, "attack": 1},
+    "trainingshield": {"name": "Training Shield", "type": "offhand", "value": 1, "defense": 1},
+    "feathers": {"name": "Feathers", "type": "ingredient", "value": 1},
+    "smallbones": {"name": "Small Bones", "type": "ingredient", "value": 1},
+    "goblinslain1": {"name": "Goblins Grunt", "type": "Slain", "value": 1},
+    "goblinslain2": {"name": "Goblin Archer", "type": "Slain", "value": 1},
+    "goblinslain3": {"name": "Goblin Chief", "type": "Slain Boss", "value": 1},
+    "mindtalisman": {"name": "Mind Talisman", "type": "ingredient", "value": 5},
+    "leathergloves": {"name": "Leather Gloves", "type": "gloves", "value": 3, "defense": 1},
+    "leatherboots": {"name": "Leather Boots", "type": "boots", "value": 3, "defense": 1},
+    "rawtrout": {"name": "Raw Trout", "type": "ingredient", "value": 3},
+    "rawsalmon": {"name": "Raw Salmon", "type": "ingredient", "value": 3},
+    "cookedtrout": {"name": "Cooked Trout", "type": "food", "value": 10, "heal": 10},
+    "cookedsalmon": {"name": "Cooked Salmon", "type": "food", "value": 11, "heal": 11},
+    "copperore": {"name": "Copper Ore", "type": "ingredient", "value": 3},
+    "copperingot": {"name": "Copper Ingot", "type": "ingredient", "value": 5},
+    "coalore": {"name": "Coal", "type": "ingredient", "value": 2},
+    "ironore": {"name": "Iron Ore", "type": "ingredient", "value": 5},
+    "ironingot": {"name": "Iron Ingot", "type": "ingredient", "value": 8},
+    "log1": {"name": "Log", "type": "ingredient", "value": 2},
+    "cutlog1": {"name": "Cut Log", "type": "ingredient", "value": 4},
+    "wool": {"name": "Wool", "type": "ingredient", "value": 3},
+    "clay": {"name": "Clay", "type": "ingredient", "value": 3},
+    "thiefslayer1": {"name": "Thief Knuckleduster", "type": "Slain", "value": 1},
+    "thiefslayer2": {"name": "Thief", "type": "Slain", "value": 1},
+    "thiefcloth1": {"name": "Mixed Cloth Patch", "type": "ingredient", "value": 2},
+    "thiefbag1": {"name": "Small Thiefs Bag", "type": "bag", "value": 2},
+    "thiefbag2": {"name": "Medium Thiefs Bag", "type": "bag", "value": 6},
+    "thiefbag3": {"name": "Large Thiefs Bag", "type": "bag", "value": 9},
+    "rawminnow": {"name": "Raw Minnow", "type": "ingredient", "value": 3},
+    "cookedminnow": {"name": "Cooked Minnow", "type": "food", "value": 5, "heal": 5},
+    "rawperch": {"name": "Raw Perch", "type": "ingredient", "value": 3},
+    "cookedperch": {"name": "Cooked Perch", "type": "food", "value": 5, "heal": 5},
+    "raweel": {"name": "Raw Eel", "type": "ingredient", "value": 4},
+    "cookedeel": {"name": "Cooked Eel", "type": "food", "value": 7, "heal": 7},
+    "barefloat1": {"name": "Bare Red Float", "type": "float", "value": 9},
+    "ancienthook": {"name": "Ancient Fishhook", "type": "hook", "value": 14},
+    "driftwood": {"name": "Driftwood", "type": "trash", "value": 1},
+    "lakereeds": {"name": "Lake Reed", "type": "ingredient", "value": 2},
+    "smoothstone": {"name": "Smooth Stone", "type": "ingredient", "value": 4},
+    "mistmoss": {"name": "Mist Moss", "type": "ingredient", "value": 2},
+    "reedfiber": {"name": "Reed Fiber", "type": "ingredient", "value": 5},
+    "waterfowlfeathers": {"name": "Waterfowl Feathers", "type": "ingredient", "value": 3},
+    "hollowbones": {"name": "Hollow Bones", "type": "ingredient", "value": 2},
+    "weteggs": {"name": "Wet Eggs", "type": "ingredient", "value": 1},
+    "reedsparrow": {"name": "Reed Sparrow", "type": "captured", "value": 7},
+    "lakefrog": {"name": "Lake Frog", "type": "captured", "value": 3},
+    "palecrab": {"name": "Pale Crab", "type": "captured", "value": 6},
+    "reedoil": {"name": "Reed Oil", "type": "ingredient", "value": 6},
+    "eelslime": {"name": "Eel Slime", "type": "ingredient", "value": 6},
+    "shorelinewraith": {"name": "Shoreline Wraith", "type": "Slain", "value": 1},
+    "mistserpent": {"name": "Mist Serpent", "type": "Slain", "value": 1},
+    "crackedshellback": {"name": "Shellback Turtle", "type": "Slain", "value": 1},
+    "taintedwater": {"name": "Tainted Water", "type": "ingredient", "value": 9},
+    "antivenomplant": {"name": "Anti-Venom Plant", "type": "ingredient", "value": 5},
+
+    # Damage & status tokens
+    "-1hp": {"name": "-1 HP", "type": "damage", "value": 1},
+    "-2hp": {"name": "-2 HP", "type": "damage", "value": 2},
+    "poison_stack": {"name": "Poison Stack", "type": "poison", "value": 1},
+    "bleed_stack": {"name": "Bleed Stack", "type": "bleed", "value": 1},
+
+    # Clothrag: removes bleed stacks
+    "clothrag": {"name": "Cloth Rag", "type": "consumable", "value": 1, "clean_bleed": 1},
+    "antivenom": {
+    "name": "Anti-Venom",
+    "type": "consumable",
+    "value": 5,
+    "clean_poison_all": True
+},
+
+}
+
+RECIPES = {
+    "berry_pie": {
+        "name": "Berry Pie",
+        "skill": "Cooking",
+        "ingredients": {"berry": 3},
+        "result": "berry_pie",
+        "xp": 20,
+    },
+    "antivenomvial": {
+        "name": "Antivenom",
+        "skill": "Herblore",
+        "ingredients": {"antivenomplant": 1},
+        "result": "antivenom",
+        "xp": 23,
+    },
+    "clothrag": {
+        "name": "Cloth Rag",
+        "skill": "Herblore",
+        "ingredients": {"thiefcloth1": 1},
+        "result": "clothrag",
+        "xp": 17,
+    },
+    "reedoil": {
+        "name": "Reed Oil",
+        "skill": "Herblore",
+        "ingredients": {"lakereeds": 2},
+        "result": "reedoil",
+        "xp": 25,
+    },
+    "eelslime": {
+        "name": "Eel Slime",
+        "skill": "Cooking",
+        "ingredients": {"raweel": 2},
+        "result": "eelslime",
+        "xp": 30,
+    },
+    "reedfiber": {
+        "name": "Reed Fibers",
+        "skill": "Fletching",
+        "ingredients": {"lakereeds": 2},
+        "result": "reedfiber",
+        "xp": 24,
+    },
+    "cookedminnow": {
+        "name": "Cooked Minnow",
+        "skill": "Cooking",
+        "ingredients": {"rawminnow": 1},
+        "result": "cookedminnow",
+        "xp": 23,
+    },
+    "cookedperch": {
+        "name": "Cooked Perch",
+        "skill": "Cooking",
+        "ingredients": {"rawperch": 1},
+        "result": "cookedperch",
+        "xp": 24,
+    },
+    "cookedeel": {
+        "name": "Cooked Eel",
+        "skill": "Cooking",
+        "ingredients": {"raweel": 1},
+        "result": "cookedeel",
+        "xp": 29,
+    },
+    "thiefbag1": {
+        "name": "Small Thiefs Bag",
+        "skill": "Crafting",
+        "ingredients": {"thiefcloth1": 2},
+        "result": "thiefbag1",
+        "xp": 20,
+    },
+    "thiefbag2": {
+        "name": "Medium Thiefs Bag",
+        "skill": "Crafting",
+        "ingredients": {"thiefcloth1": 4},
+        "result": "thiefbag1",
+        "xp": 25,
+    },
+    "thiefbag3": {
+        "name": "Large Thiefs Bag",
+        "skill": "Crafting",
+        "ingredients": {"thiefcloth1": 7},
+        "result": "thiefbag1",
+        "xp": 35,
+    },
+    "copperingot": {
+        "name": "Copper Ingot",
+        "skill": "Smithing",
+        "ingredients": {"copperore": 1},
+        "result": "copperingot",
+        "xp": 15,
+    },
+    "ironingot": {
+        "name": "Iron Ingot",
+        "skill": "Smithing",
+        "ingredients": {"ironore": 1},
+        "result": "ironingot",
+        "xp": 17,
+    },
+    "cookedtrout": {
+        "name": "Cooked Trout",
+        "skill": "Cooking",
+        "ingredients": {"rawtrout": 1},
+        "result": "cookedtrout",
+        "xp": 12,
+    },
+    "cookedsalmon": {
+        "name": "Cooked Salmon",
+        "skill": "Cooking",
+        "ingredients": {"rawsalmon": 1},
+        "result": "cookedsalmon",
+        "xp": 12,
+    },
+    "berry_juice": {
+        "name": "Berry Juice",
+        "skill": "Cooking",
+        "ingredients": {"berry": 2},
+        "result": "berry_juice",
+        "xp": 10,
+    },
+    "leathergloves": {
+        "name": "Leather Gloves",
+        "skill": "Crafting",
+        "ingredients": {"cowhide": 2},
+        "result": "leathergloves",
+        "xp": 15,
+    },
+    "leatherboots": {
+        "name": "Leather Boots",
+        "skill": "Crafting",
+        "ingredients": {"cowhide": 2},
+        "result": "leatherboots",
+        "xp": 15,
+    },
+    "gourd_water": {
+        "name": "Water Gourd",
+        "skill": "Cooking",
+        "ingredients": {"water": 2, "gourd": 1},
+        "result": "gourdwater",
+        "xp": 10,
+    },
+    "tomatosauce1": {
+        "name": "Red Sauce",
+        "skill": "Cooking",
+        "ingredients": {"tomato": 2},
+        "result": "tomatosauce1",
+        "xp": 15,
+    },
+    "sauceybread": {
+        "name": "Red Saucey Bread",
+        "skill": "Cooking",
+        "ingredients": {"dough1": 1, "tomatosauce1": 2},
+        "result": "sauceybread",
+        "xp": 15,
+    },
+    "hppot1": {
+        "name": "Small Red Potion",
+        "skill": "Crafting",
+        "ingredients": {"herb1": 2, "tomatosauce1": 2},
+        "result": "hppot1",
+        "xp": 15,
+    },
+    "mppot1": {
+        "name": "Small Blue Potion",
+        "skill": "Crafting",
+        "ingredients": {"herb2": 2, "vial1": 2},
+        "result": "mppot1",
+        "xp": 15,
+    },
+    "eggsalad": {
+        "name": "Egg Salad",
+        "skill": "Cooking",
+        "ingredients": {"eggs": 2, "cabbages": 1},
+        "result": "eggsalad",
+        "xp": 15,
+    },
+    "cooked_meat": {
+        "name": "Cooked Meat",
+        "skill": "Cooking",
+        "ingredients": {"raw_meat": 1},
+        "result": "cooked_meat",
+        "xp": 15,
+    },
+    "coin2": {
+        "name": "+1 Silvercoin",
+        "skill": "Bartering",
+        "ingredients": {"coin1": 10},
+        "result": "coin2",
+        "xp": 10,
+    },
+    "coin3": {
+        "name": "+1 Goldcoin",
+        "skill": "Bartering",
+        "ingredients": {"coin2": 10},
+        "result": "coin3",
+        "xp": 15,
+    },
+}
+
+#                     PROFESSION LOOT TIERS
+PROFESSION_LOOT = {
+    "tentcity": [
+        "berry", "dough1", "gourd", "water", "shortbow", "bronzearrow",
+        "tomato", "vial1", "cabbages", "eggs", "cowhide", "knife",
+        "bronzepickaxe", "bronzeaxe", "smallfishingnet", "coin1",
+        "trainingsword", "trainingshield", "antivenom","clothrag",
+    ],
+    "tentherb": ["herb1", "herb2", "vial1"],
+    "tentfarm": ["berry", "dough1", "tomato", "eggs", "cabbages", "raw_meat", "feathers", "smallbones"],
+    "tentrunecraft": ["airrune", "mindrune"],
+    "tentslayer": [
+        "goblinslain1", "goblinslain2", "mindrune", "mindtalisman", "coin1",
+        "-1hp", "poison_stack", "bleed_stack","antivenom",
+    ],
+    "thieffishing": ["rawtrout", "rawsalmon", "coin1"],
+    "thiefmining": ["coalore", "ironore", "copperore", "trash"],
+    "thieffletching": ["cutlog1", "shortbow", "knife", "bronzearrow"],
+    "thiefwoodcutting": ["log1"],
+    "thiefcrafting": ["wool", "clay"],
+    "thiefslayer": [
+        "coin1", "thiefslayer1", "thiefslayer2", "thiefcloth1",
+        "-1hp","bleed_stack","clothrag"
+    ],
+    "baregathering": ["driftwood", "lakereeds", "smoothstone", "mistmoss", "reedfiber"],
+    "barehunter": [
+        "waterfowlfeathers", "hollowbones", "weteggs",
+        "reedsparrow", "lakefrog", "palecrab"
+    ],
+    "bareherblore": ["reedoil", "eelslime","antivenomplant"],
+    "barefishing": ["rawminnow", "rawperch","raweel","barefloat1","ancienthook"],
+    "bareslayer": [
+        "shorelinewraith", "mistserpent", "crackedshellback",
+        "wraithdust", "serpentscales", "shellbackcarapace", "taintedwater",
+        "-1hp", "poison_stack",
+    ],
+}
+
+# ============================================================
+#                     ZONE DEFINITIONS
+# ============================================================
+
+ZONES = {
+    "The Guild Tent City": {
+        "loot": ["trash"],
+        "allowed_professions": {
+            "Cooking": "tentcity",
+            "Crafting": "tentcity",
+            "Herblore": "tentherb",
+            "Runecraft": "tentrunecraft",
+            "Farming": "tentfarm",
+            "Slayer": "tentslayer",
+        },
+    },
+    "Thiefs Village": {
+        "loot": ["trash"],
+        "allowed_professions": {
+            "Fishing": "thieffishing",
+            "Mining": "thiefmining",
+            "Fletching": "thieffletching",
+            "Crafting": "thiefcrafting",
+            "Woodcutting": "thiefwoodcutting",
+            "Slayer": "thiefslayer",
+        },
+    },
+    "Bare Lake": {
+        "loot": ["trash"],
+        "allowed_professions": {
+            "Fishing": "barefishing",   # (no tier defined yet, same as your original)
+            "Gathering": "baregathering",
+            "Hunter": "barehunter",
+            "Herblore": "bareherblore",
+            "Slayer": "bareslayer",
+        },
+    },
+}
+# ============================================================
+#                     PLAYER MODEL
+# ============================================================
+
+class Player:
+    def __init__(self):
+        self.level = 1
+        self.exp = 0
+        self.exp_to_level = 100
+
+        self.languages = {k: v.copy() for k, v in LANGUAGE_TEMPLATE.items()}
+        self.elements = {k: v.copy() for k, v in ELEMENT_TEMPLATE.items()}
+        self.professions = {k: v.copy() for k, v in PROFESSION_TEMPLATE.items()}
+        self.combat = {k: v.copy() for k, v in COMBAT_TEMPLATE.items()}
+
+        self.inventory = {}
+        self.current_zone = "The Guild Tent City"
+
+        # HP pool
+        self.max_hp = 10
+        self.hp = self.max_hp
+
+        # OSRS-style equipment layout (Version A)
+        self.equipment = {
+            "helmet": None,
+            "necklace": None,
+            "guild_token": None,
+            "back": None,      # back / cape / quiver
+            "armor": None,
+            "mainhand": None,
+            "offhand": None,
+            "twohand": None,
+            "trinket1": None,
+            "trinket2": None,
+            "ring1": None,
+            "ring2": None,
+        }
+
+    def add_exp(self, amount):
+        self.exp += amount
+        while self.exp >= self.exp_to_level:
+            self.exp -= self.exp_to_level
+            self.level += 1
+            self.exp_to_level = int(self.exp_to_level * 1.25)
+
+    def add_skill_xp(self, group, name, amount):
+        d = getattr(self, group)
+        if name not in d:
+            return
+        skill = d[name]
+        skill["xp"] += amount
+        while skill["xp"] >= skill["xp_to_level"]:
+            skill["xp"] -= skill["xp_to_level"]
+            skill["level"] += 1
+            skill["xp_to_level"] = int(skill["xp_to_level"] * 1.25)
+
+    def add_item(self, item_id, qty=1):
+        if item_id not in ITEMS:
+            return
+        self.inventory[item_id] = self.inventory.get(item_id, 0) + qty
+
+    def remove_item(self, item_id, qty=1):
+        if item_id not in self.inventory:
+            return False
+        if self.inventory[item_id] < qty:
+            return False
+        self.inventory[item_id] -= qty
+        if self.inventory[item_id] <= 0:
+            del self.inventory[item_id]
+        return True
+
+    def get_defense(self):
+        defense = 0
+        # from equipped items
+        for slot, item_id in self.equipment.items():
+            if item_id is None:
+                continue
+            defense += ITEMS.get(item_id, {}).get("defense", 0)
+        return defense
+
+    def get_equipment_stats(self):
+        stats = {
+            "attack": 0,
+            "strength": 0,
+            "defense": 0,
+            "magic": 0,
+            "ranged": 0,
+            "prayer": 0,
+            "hp": 0,
+        }
+        for slot, item_id in self.equipment.items():
+            if item_id is None:
+                continue
+            item = ITEMS.get(item_id, {})
+            for key in stats.keys():
+                stats[key] += item.get(key, 0)
+        return stats
+
+    def apply_damage(self, base_damage):
+        # bleed stacks increase damage when a -1hp-type hit occurs
+        bleed_stacks = self.inventory.get("bleed_stack", 0)
+        if base_damage == 1 and bleed_stacks > 0:
+            base_damage += bleed_stacks
+
+        defense = self.get_defense()
+        final_damage = max(0, base_damage - defense)
+        if final_damage <= 0:
+            return
+
+        self.hp -= final_damage
+        if self.hp < 0:
+            self.hp = 0
+
+        # combat XP from taking damage (Defense + Hitpoints)
+        self.add_skill_xp("combat", "Defense", final_damage)
+        self.add_skill_xp("combat", "Hitpoints", final_damage)
+
+    def apply_poison_stack(self):
+        stacks = self.inventory.get("poison_stack", 0)
+        if stacks >= 10:
+            self.hp = 0
+
+    def heal_hp(self, amount):
+        self.hp += amount
+        if self.hp > self.max_hp:
+            self.hp = self.max_hp
+
+    def use_item(self, item_id):
+        if self.inventory.get(item_id, 0) <= 0:
+            return False
+
+        item = ITEMS.get(item_id, {})
+
+        # Clothrag removes bleed stacks
+        clean_bleed = item.get("clean_bleed", 0)
+        if clean_bleed > 0:
+            bleed = self.inventory.get("bleed_stack", 0)
+            if bleed > 0:
+                new_bleed = max(0, bleed - clean_bleed)
+                if new_bleed == 0:
+                    self.inventory.pop("bleed_stack", None)
+                else:
+                    self.inventory["bleed_stack"] = new_bleed
+                self.remove_item(item_id, 1)
+                return True
+        # Anti-Venom removes ALL poison stacks
+        if item.get("clean_poison_all", False):
+            if "poison_stack" in self.inventory:
+                self.inventory.pop("poison_stack")
+            self.remove_item(item_id, 1)
+            return True
+
+
+
+        # Food healing
+        if item.get("type") == "food":
+            heal = item.get("heal", item.get("value", 1))
+            self.heal_hp(heal)
+            self.add_skill_xp("combat", "Hitpoints", heal)
+            self.remove_item(item_id, 1)
+            return True
+
+        # Potions that heal
+        if item.get("type") == "potion" and item.get("heal", 0) > 0:
+            heal = item.get("heal", 1)
+            self.heal_hp(heal)
+            self.add_skill_xp("combat", "Hitpoints", heal)
+            self.remove_item(item_id, 1)
+            return True
+
+        return False
+
+    def equip_item(self, item_id):
+        if item_id not in self.inventory or self.inventory[item_id] <= 0:
+            return False
+
+        item = ITEMS.get(item_id, {})
+        itype = item.get("type", "")
+
+        slot = None
+        if itype == "helmet":
+            slot = "helmet"
+        elif itype == "necklace":
+            slot = "necklace"
+        elif itype == "guild_token":
+            slot = "guild_token"
+        elif itype in ("back", "cape", "quiver"):
+            slot = "back"
+        elif itype == "armor":
+            slot = "armor"
+        elif itype == "mainhand":
+            slot = "mainhand"
+        elif itype == "offhand":
+            slot = "offhand"
+        elif itype == "2h":
+            slot = "twohand"
+        elif itype == "trinket":
+            if self.equipment["trinket1"] is None:
+                slot = "trinket1"
+            else:
+                slot = "trinket2"
+        elif itype == "ring":
+            if self.equipment["ring1"] is None:
+                slot = "ring1"
+            else:
+                slot = "ring2"
+
+        if slot is None:
+            return False
+
+        # 2h logic: equipping 2h clears mainhand/offhand
+        if slot == "twohand":
+            self.equipment["mainhand"] = None
+            self.equipment["offhand"] = None
+
+        # equipping mainhand/offhand clears 2h
+        if slot in ("mainhand", "offhand"):
+            self.equipment["twohand"] = None
+
+        self.equipment[slot] = item_id
+        return True
+
+    def unequip_all(self):
+        for k in self.equipment.keys():
+            self.equipment[k] = None
+
+
+player = Player()
+# ============================================================
+#                     UI LAYER
+# ============================================================
+
+class GameUI:
+    def __init__(self, root, player):
+        self.root = root
+        self.player = player
+
+        self.root.title("Momo MMORPG")
+        self.root.geometry("1000x700")
+
+        self.notebook = ttk.Notebook(self.root)
+        self.notebook.pack(fill="both", expand=True)
+
+        self.tab_xp = ttk.Frame(self.notebook)
+        self.tab_lang = ttk.Frame(self.notebook)
+        self.tab_elem = ttk.Frame(self.notebook)
+        self.tab_skills = ttk.Frame(self.notebook)
+        self.tab_inv = ttk.Frame(self.notebook)
+        self.tab_zone = ttk.Frame(self.notebook)
+
+        self.notebook.add(self.tab_xp, text="XP")
+        self.notebook.add(self.tab_lang, text="Languages")
+        self.notebook.add(self.tab_elem, text="Elements")
+        self.notebook.add(self.tab_skills, text="Skills")
+        self.notebook.add(self.tab_inv, text="Inventory")
+        self.notebook.add(self.tab_zone, text="Zones")
+
+        self.level_label = None
+        self.exp_bar = None
+        self.hp_label = None
+
+        self.lang_widgets = {}
+        self.elem_widgets = {}
+        self.prof_widgets = {}
+        self.combat_widgets = {}
+
+        self.inv_tree = None
+        self.zone_label = None
+        self.zone_info = None
+
+        self.craft_list = None
+        self.craft_button = None
+        self.use_button = None
+        self.hp_display = None
+
+        self.equip_labels = {}
+        self.stat_labels = {}
+
+        self.build_xp_tab()
+        self.build_lang_tab()
+        self.build_elem_tab()
+        self.build_skills_tab()
+        self.build_inv_tab()
+        self.build_zone_tab()
+
+    # ---------------- XP TAB ----------------
+
+    def build_xp_tab(self):
+        self.level_label = ttk.Label(self.tab_xp, text=f"Level: {self.player.level}", font=("Segoe UI", 16))
+        self.level_label.pack(pady=10)
+
+        self.exp_bar = ttk.Progressbar(self.tab_xp, orient="horizontal", length=400, mode="determinate")
+        self.exp_bar.pack(pady=10)
+
+        self.hp_label = ttk.Label(self.tab_xp, text=f"HP: {self.player.hp}/{self.player.max_hp}", font=("Segoe UI", 12))
+        self.hp_label.pack(pady=10)
+
+    # ---------------- LANG TAB ----------------
+
+    def build_lang_tab(self):
+        frame = self.tab_lang
+        row = 0
+        for name in self.player.languages.keys():
+            lbl = ttk.Label(frame, text=name)
+            lbl.grid(row=row, column=0, padx=10, pady=5, sticky="w")
+
+            bar = ttk.Progressbar(frame, orient="horizontal", length=300, mode="determinate")
+            bar.grid(row=row, column=1, padx=10, pady=5)
+
+            lvl_lbl = ttk.Label(frame, text="Lv 1")
+            lvl_lbl.grid(row=row, column=2, padx=10, pady=5)
+
+            self.lang_widgets[name] = {"bar": bar, "lvl": lvl_lbl}
+            row += 1
+
+    # ---------------- ELEMENT TAB ----------------
+
+    def build_elem_tab(self):
+        frame = self.tab_elem
+        row = 0
+        for name in self.player.elements.keys():
+            lbl = ttk.Label(frame, text=name)
+            lbl.grid(row=row, column=0, padx=10, pady=5, sticky="w")
+
+            bar = ttk.Progressbar(frame, orient="horizontal", length=300, mode="determinate")
+            bar.grid(row=row, column=1, padx=10, pady=5)
+
+            lvl_lbl = ttk.Label(frame, text="Lv 0")
+            lvl_lbl.grid(row=row, column=2, padx=10, pady=5)
+
+            self.elem_widgets[name] = {"bar": bar, "lvl": lvl_lbl}
+            row += 1
+
+    # ---------------- SKILLS TAB ----------------
+
+    def build_skills_tab(self):
+        frame = self.tab_skills
+        row = 0
+
+        title_prof = ttk.Label(frame, text="Professions", font=("Segoe UI", 14, "bold"))
+        title_prof.grid(row=row, column=0, columnspan=3, padx=10, pady=(10, 5), sticky="w")
+        row += 1
+
+        for name in self.player.professions.keys():
+            lbl = ttk.Label(frame, text=name)
+            lbl.grid(row=row, column=0, padx=10, pady=5, sticky="w")
+
+            bar = ttk.Progressbar(frame, orient="horizontal", length=300, mode="determinate")
+            bar.grid(row=row, column=1, padx=10, pady=5)
+
+            lvl_lbl = ttk.Label(frame, text=f"Lv {self.player.professions[name]['level']}")
+            lvl_lbl.grid(row=row, column=2, padx=10, pady=5)
+
+            self.prof_widgets[name] = {"bar": bar, "lvl": lvl_lbl}
+            row += 1
+
+        row += 1
+        title_combat = ttk.Label(frame, text="Combat Skills", font=("Segoe UI", 14, "bold"))
+        title_combat.grid(row=row, column=0, columnspan=3, padx=10, pady=(20, 5), sticky="w")
+        row += 1
+
+        for name in self.player.combat.keys():
+            lbl = ttk.Label(frame, text=name)
+            lbl.grid(row=row, column=0, padx=10, pady=5, sticky="w")
+
+            bar = ttk.Progressbar(frame, orient="horizontal", length=300, mode="determinate")
+            bar.grid(row=row, column=1, padx=10, pady=5)
+
+            lvl_lbl = ttk.Label(frame, text=f"Lv {self.player.combat[name]['level']}")
+            lvl_lbl.grid(row=row, column=2, padx=10, pady=5)
+
+            self.combat_widgets[name] = {"bar": bar, "lvl": lvl_lbl}
+            row += 1
+
+    # ---------------- INVENTORY TAB + EQUIPMENT ----------------
+
+    def build_inv_tab(self):
+        frame = self.tab_inv
+
+        columns = ("name", "qty", "type", "value")
+        self.inv_tree = ttk.Treeview(frame, columns=columns, show="headings")
+
+        self.inv_tree.heading("name", text="Item")
+        self.inv_tree.heading("qty", text="Qty")
+        self.inv_tree.heading("type", text="Type")
+        self.inv_tree.heading("value", text="Value")
+
+        self.inv_tree.column("name", width=220)
+        self.inv_tree.column("qty", width=60, anchor="center")
+        self.inv_tree.column("type", width=120, anchor="center")
+        self.inv_tree.column("value", width=80, anchor="center")
+
+        self.inv_tree.pack(fill="both", expand=True, padx=10, pady=10)
+
+        # HP display on inventory tab
+        self.hp_display = ttk.Label(frame, text=f"HP: {self.player.hp}/{self.player.max_hp}", font=("Segoe UI", 12))
+        self.hp_display.pack(pady=5)
+
+        # Use Item button directly under inventory
+        self.use_button = ttk.Button(frame, text="Use Selected Item", command=self.use_selected_item)
+        self.use_button.pack(pady=5)
+
+        craft_frame = ttk.LabelFrame(frame, text="Crafting / Cooking")
+        craft_frame.pack(fill="x", padx=10, pady=(0, 10))
+
+        ttk.Label(craft_frame, text="Recipes:").grid(row=0, column=0, padx=10, pady=5, sticky="w")
+
+        self.craft_list = tk.Listbox(craft_frame, height=5, width=40)
+        self.craft_list.grid(row=1, column=0, padx=10, pady=5, sticky="w")
+
+        self.craft_button = ttk.Button(craft_frame, text="Craft Selected", command=self.craft_selected_recipe)
+        self.craft_button.grid(row=1, column=1, padx=10, pady=5, sticky="w")
+
+        # Equipment panel (OSRS-style Version A)
+        equip_frame = ttk.LabelFrame(frame, text="Equipment")
+        equip_frame.pack(fill="x", padx=10, pady=(10, 5))
+
+        self.equip_labels = {}
+
+        # Row 0: Helmet
+        ttk.Label(equip_frame, text="Helmet:").grid(row=0, column=0, sticky="e", padx=5, pady=2)
+        self.equip_labels["helmet"] = ttk.Label(equip_frame, text="(empty)")
+        self.equip_labels["helmet"].grid(row=0, column=1, sticky="w", padx=5, pady=2)
+
+        # Row 1: Necklace, Back/Cape/Quiver, Guild Token
+        ttk.Label(equip_frame, text="Necklace:").grid(row=1, column=0, sticky="e", padx=5, pady=2)
+        self.equip_labels["necklace"] = ttk.Label(equip_frame, text="(empty)")
+        self.equip_labels["necklace"].grid(row=1, column=1, sticky="w", padx=5, pady=2)
+
+        ttk.Label(equip_frame, text="Back/Cape/Quiver:").grid(row=1, column=2, sticky="e", padx=5, pady=2)
+        self.equip_labels["back"] = ttk.Label(equip_frame, text="(empty)")
+        self.equip_labels["back"].grid(row=1, column=3, sticky="w", padx=5, pady=2)
+
+        ttk.Label(equip_frame, text="Guild Token:").grid(row=1, column=4, sticky="e", padx=5, pady=2)
+        self.equip_labels["guild_token"] = ttk.Label(equip_frame, text="(empty)")
+        self.equip_labels["guild_token"].grid(row=1, column=5, sticky="w", padx=5, pady=2)
+
+        # Row 2: Mainhand, Armor, Offhand
+        ttk.Label(equip_frame, text="Mainhand:").grid(row=2, column=0, sticky="e", padx=5, pady=2)
+        self.equip_labels["mainhand"] = ttk.Label(equip_frame, text="(empty)")
+        self.equip_labels["mainhand"].grid(row=2, column=1, sticky="w", padx=5, pady=2)
+
+        ttk.Label(equip_frame, text="Armor:").grid(row=2, column=2, sticky="e", padx=5, pady=2)
+        self.equip_labels["armor"] = ttk.Label(equip_frame, text="(empty)")
+        self.equip_labels["armor"].grid(row=2, column=3, sticky="w", padx=5, pady=2)
+
+        ttk.Label(equip_frame, text="Offhand:").grid(row=2, column=4, sticky="e", padx=5, pady=2)
+        self.equip_labels["offhand"] = ttk.Label(equip_frame, text="(empty)")
+        self.equip_labels["offhand"].grid(row=2, column=5, sticky="w", padx=5, pady=2)
+
+        # Row 3: Trinkets
+        ttk.Label(equip_frame, text="Trinket 1:").grid(row=3, column=0, sticky="e", padx=5, pady=2)
+        self.equip_labels["trinket1"] = ttk.Label(equip_frame, text="(empty)")
+        self.equip_labels["trinket1"].grid(row=3, column=1, sticky="w", padx=5, pady=2)
+
+        ttk.Label(equip_frame, text="Trinket 2:").grid(row=3, column=2, sticky="e", padx=5, pady=2)
+        self.equip_labels["trinket2"] = ttk.Label(equip_frame, text="(empty)")
+        self.equip_labels["trinket2"].grid(row=3, column=3, sticky="w", padx=5, pady=2)
+
+        # Row 4: Rings
+        ttk.Label(equip_frame, text="Ring 1:").grid(row=4, column=0, sticky="e", padx=5, pady=2)
+        self.equip_labels["ring1"] = ttk.Label(equip_frame, text="(empty)")
+        self.equip_labels["ring1"].grid(row=4, column=1, sticky="w", padx=5, pady=2)
+
+        ttk.Label(equip_frame, text="Ring 2:").grid(row=4, column=2, sticky="e", padx=5, pady=2)
+        self.equip_labels["ring2"] = ttk.Label(equip_frame, text="(empty)")
+        self.equip_labels["ring2"].grid(row=4, column=3, sticky="w", padx=5, pady=2)
+
+        # Equip / Unequip buttons
+        ttk.Button(equip_frame, text="Equip Selected", command=self.equip_selected_item).grid(
+            row=5, column=0, columnspan=2, pady=5
+        )
+        ttk.Button(equip_frame, text="Unequip All", command=self.unequip_all_items).grid(
+            row=5, column=2, columnspan=2, pady=5
+        )
+
+        # Stats summary
+        stats_frame = ttk.LabelFrame(equip_frame, text="Total Stats")
+        stats_frame.grid(row=6, column=0, columnspan=6, pady=5, sticky="we")
+
+        self.stat_labels = {}
+        stat_names = ["attack", "strength", "defense", "magic", "ranged", "prayer", "hp"]
+        col = 0
+        for s in stat_names:
+            lbl = ttk.Label(stats_frame, text=f"{s.capitalize()}: 0")
+            lbl.grid(row=0, column=col, padx=5, pady=2)
+            self.stat_labels[s] = lbl
+            col += 1
+
+        self.update_inventory_tab()
+        self.update_stats_summary()
+        self.update_equipment_ui()
+        self.update_recipe_list()
+
+    def update_recipe_list(self):
+        if self.craft_list is None:
+            return
+        self.craft_list.delete(0, tk.END)
+        for recipe_id, data in RECIPES.items():
+            can_craft = True
+            for item_id, qty in data["ingredients"].items():
+                if self.player.inventory.get(item_id, 0) < qty:
+                    can_craft = False
+                    break
+            if can_craft:
+                self.craft_list.insert(tk.END, data["name"])
+
+    def craft_selected_recipe(self):
+        selection = self.craft_list.curselection()
+        if not selection:
+            return
+
+        recipe_name = self.craft_list.get(selection[0])
+
+        recipe_id = None
+        for rid, data in RECIPES.items():
+            if data["name"] == recipe_name:
+                recipe_id = rid
+                break
+
+        if recipe_id is None:
+            return
+
+        recipe = RECIPES[recipe_id]
+        ingredients = recipe["ingredients"]
+
+        for item_id, needed_qty in ingredients.items():
+            if self.player.inventory.get(item_id, 0) < needed_qty:
+                return
+
+        for item_id, needed_qty in ingredients.items():
+            self.player.remove_item(item_id, needed_qty)
+
+        self.player.add_item(recipe["result"], 1)
+        self.player.add_skill_xp("professions", recipe["skill"], recipe.get("xp", 10))
+
+        # Food heals HP and Hitpoints XP on craft (optional)
+        if ITEMS[recipe["result"]]["type"] == "food":
+            heal_amount = ITEMS[recipe["result"]].get("heal", ITEMS[recipe["result"]].get("value", 1))
+            self.player.heal_hp(heal_amount)
+            self.player.add_skill_xp("combat", "Hitpoints", heal_amount)
+
+        self.update_inventory_tab()
+        self.update_skill_group("professions", self.player.professions, self.prof_widgets)
+        self.update_skill_group("combat", self.player.combat, self.combat_widgets)
+        self.update_recipe_list()
+        self.update_stats_summary()
+        self.update_equipment_ui()
+        self.update_xp_tab()
+
+    def use_selected_item(self):
+        selection = self.inv_tree.selection()
+        if not selection:
+            return
+
+        item_id = selection[0]
+        if item_id not in ITEMS:
+            return
+
+        if self.player.use_item(item_id):
+            self.update_inventory_tab()
+            self.update_stats_summary()
+            self.update_equipment_ui()
+            self.update_xp_tab()
+            self.update_recipe_list()
+
+    def update_inventory_tab(self):
+        # remember selection
+        selection = self.inv_tree.selection()
+
+        self.inv_tree.delete(*self.inv_tree.get_children())
+
+        sorted_items = sorted(
+            self.player.inventory.items(),
+            key=lambda x: ITEMS[x[0]].get("type", "zzz")
+        )
+
+        for item_id, qty in sorted_items:
+            item = ITEMS[item_id]
+            name = item["name"]
+            item_type = item.get("type", "Unknown")
+            value = item.get("value", 0)
+            self.inv_tree.insert("", "end", iid=item_id, values=(name, qty, item_type, value))
+
+        # restore selection if item still exists
+        if selection:
+            for iid in selection:
+                if iid in self.inv_tree.get_children():
+                    self.inv_tree.selection_set(iid)
+
+        if self.hp_display is not None:
+            self.hp_display.config(text=f"HP: {self.player.hp}/{self.player.max_hp}")
+
+        # keep crafting list in sync with inventory
+        self.update_recipe_list()
+
+    def update_equipment_ui(self):
+        for slot, label in self.equip_labels.items():
+            item_id = self.player.equipment.get(slot)
+            if item_id is None:
+                label.config(text="(empty)")
+            else:
+                label.config(text=ITEMS[item_id]["name"])
+
+    def update_stats_summary(self):
+        stats = self.player.get_equipment_stats()
+        for key, lbl in self.stat_labels.items():
+            lbl.config(text=f"{key.capitalize()}: {stats.get(key, 0)}")
+
+    def equip_selected_item(self):
+        selection = self.inv_tree.selection()
+        if not selection:
+            return
+        item_id = selection[0]
+        if item_id not in ITEMS:
+            return
+        if self.player.equip_item(item_id):
+            self.update_equipment_ui()
+            self.update_stats_summary()
+
+    def unequip_all_items(self):
+        self.player.unequip_all()
+        self.update_equipment_ui()
+        self.update_stats_summary()
+
+    # ---------------- ZONE TAB ----------------
+
+    def build_zone_tab(self):
+        frame = self.tab_zone
+
+        ttk.Label(frame, text="Select Zone:", font=("Segoe UI", 14)).pack(pady=10)
+
+        for zone_name in ZONES.keys():
+            btn = ttk.Button(
+                frame,
+                text=zone_name,
+                command=lambda z=zone_name: self.set_zone(z)
+            )
+            btn.pack(pady=5)
+
+        self.zone_label = ttk.Label(
+            frame,
+            text=f"Current Zone: {self.player.current_zone}",
+            font=("Segoe UI", 12)
+        )
+        self.zone_label.pack(pady=20)
+
+        ttk.Label(frame, text="Zone Professions:", font=("Segoe UI", 12, "bold")).pack(pady=10)
+
+        self.zone_info = tk.Text(frame, height=10, width=60)
+        self.zone_info.pack(pady=10)
+        self.zone_info.config(state="disabled")
+
+        self.update_zone_info(self.player.current_zone)
+
+    def set_zone(self, zone_name):
+        self.player.current_zone = zone_name
+        if self.zone_label is not None:
+            self.zone_label.config(text=f"Current Zone: {zone_name}")
+        self.update_zone_info(zone_name)
+
+    def update_zone_info(self, zone_name):
+        zone_data = ZONES.get(zone_name, {})
+        allowed_profs = zone_data.get("allowed_professions", {})
+
+        info_text = f"--- {zone_name} ---\n\n"
+        info_text += "Professions Active Here:\n"
+
+        if allowed_profs:
+            for prof in allowed_profs.keys():
+                info_text += f" • {prof}\n"
+        else:
+            info_text += " • None\n"
+
+        self.zone_info.config(state="normal")
+        self.zone_info.delete("1.0", tk.END)
+        self.zone_info.insert(tk.END, info_text)
+        self.zone_info.config(state="disabled")
+
+    # ---------------- UPDATE METHODS ----------------
+
+    def update_xp_tab(self):
+        self.level_label.config(text=f"Level: {self.player.level}")
+        ratio = self.player.exp / self.player.exp_to_level if self.player.exp_to_level > 0 else 0
+        self.exp_bar["value"] = ratio * 100
+        self.hp_label.config(text=f"HP: {self.player.hp}/{self.player.max_hp}")
+        if self.hp_display is not None:
+            self.hp_display.config(text=f"HP: {self.player.hp}/{self.player.max_hp}")
+
+    def update_skill_group(self, group_name, data_dict, widget_dict):
+        for name, skill in data_dict.items():
+            if name not in widget_dict:
+                continue
+            bar = widget_dict[name]["bar"]
+            lvl_lbl = widget_dict[name]["lvl"]
+            ratio = skill["xp"] / skill["xp_to_level"] if skill["xp_to_level"] > 0 else 0
+            bar["value"] = ratio * 100
+            lvl_lbl.config(text=f"Lv {skill['level']}")
+
+    def refresh_all(self):
+        self.update_xp_tab()
+        self.update_skill_group("languages", self.player.languages, self.lang_widgets)
+        self.update_skill_group("elements", self.player.elements, self.elem_widgets)
+        self.update_skill_group("professions", self.player.professions, self.prof_widgets)
+        self.update_skill_group("combat", self.player.combat, self.combat_widgets)
+        self.update_inventory_tab()
+        self.update_stats_summary()
+        self.update_equipment_ui()
+        if self.zone_label is not None:
+            self.zone_label.config(text=f"Current Zone: {self.player.current_zone}")
+            self.update_zone_info(self.player.current_zone)
+        # keep crafting list synced every tick
+        self.update_recipe_list()
+# ============================================================
+#                     AFK ENGINE
+# ============================================================
+
+class AFKEngine:
+    def __init__(self, player, ui):
+        self.player = player
+        self.ui = ui
+        self.running = True
+
+    def start(self):
+        t = threading.Thread(target=self.loop, daemon=True)
+        t.start()
+
+    def loop(self):
+        while self.running:
+            time.sleep(2.5)
+
+            # global XP tick
+            self.player.add_exp(10)
+
+            zone = self.player.current_zone
+            zone_data = ZONES.get(zone, {})
+            allowed_prof_map = zone_data.get("allowed_professions", {})
+
+            if allowed_prof_map:
+                prof = random.choice(list(allowed_prof_map.keys()))
+                self.player.add_skill_xp("professions", prof, 5)
+
+                tier_key = allowed_prof_map[prof]
+                loot_list = PROFESSION_LOOT.get(tier_key, [])
+                if loot_list:
+                    item_id = random.choice(loot_list)
+                    if item_id in ITEMS:
+                        item = ITEMS[item_id]
+                        itype = item.get("type", "")
+
+                        if itype == "damage":
+                            dmg = item.get("value", 1)
+                            self.player.apply_damage(dmg)
+                        elif itype == "poison":
+                            self.player.add_item("poison_stack", 1)
+                            self.player.apply_poison_stack()
+                        elif itype == "bleed":
+                            self.player.add_item("bleed_stack", 1)
+                        else:
+                            self.player.add_item(item_id)
+
+            # UI refresh on main thread
+            self.ui.root.after(0, self.ui.refresh_all)
+
+# ============================================================
+#                     MAIN
+# ============================================================
+
+def main():
+    root = tk.Tk()
+    ui_layer = GameUI(root, player)
+    engine = AFKEngine(player, ui_layer)
+    engine.start()
+    root.mainloop()
+
+
+if __name__ == "__main__":
+    main()
